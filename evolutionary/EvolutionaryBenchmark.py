@@ -10,23 +10,24 @@ class EvolutionaryBenchmark:
             raise ValueError("Population size must be even")
         self.population_size = population_size
         self.mutation_rate = mutation_rate
-        self.population = []
+        self.population = None
 
     def random_initialization(self):
+        self.population = []
         for _ in range(self.population_size):
             self.population.append(np.random.randint(2, size=GRID_DIMS))
 
     def do_n_cycles(self, n):
         # Initialize if it hasn't been done already
-        if len(self.population) == 0:
+        if self.population is None:
             self.random_initialization()
         # Perform one cycle of the Game of life and evolve
         for i in range(n):
             self.do_one_cycle()
             self.assess_fitness()
-            mating_pool = self.select()
-            self.crossover(mating_pool)
-            self.mutate()
+            next_generation = self.select()
+            ## skipping crossover for now ##
+            self.population = self.mutate(next_generation)
 
     def do_one_cycle(self):
         ''' Performs one cycle of the Game of Life'''
@@ -53,29 +54,14 @@ class EvolutionaryBenchmark:
                                 size=self.population_size,
                                 p=selection_probs)
 
-    def crossover(mating_pool):
-        ''' Implements two types of code recombination. Twice, parents are
-        selected from the mating pool and combine their genes '''
-        offspring = []
-
-        # Keep the top half from the mother and the bottom half from the father
-        for mother, father in make_pairs(mating_pool):
-            assert mother.shape[0] % 2 == 0
-            cutoff = mother.shape[0] // 2
-            child = np.vstack(mother[:cutoff,:], father[cutoff:,:])
-            offspring.append(child)
-
-        # Keep the left half from the mother and the right half from the father
-        for mother, father in make_pairs(mating_pool, shuffle=True):
-            assert mother.shape[1] % 2 == 0
-            cutoff = mother.shape[1] // 2
-            child = np.hstack(mother[:, :cutoff], father[:, cutoff:])
-            offspring.append(child)
-        return offspring
-
-    def mutate(self, rate):
-        # TODO
-
+    def mutate(self, population):
+        ''' Performs random mutation. Each cell of each individual has a
+        probability (mutation_rate) of being mutated '''
+        for individual in population:
+            for cell in np.nditer(individual, op_flags=['readwrite']):
+                if np.random.rand() < self.mutation_rate:
+                    cell[...] = 1 if cell == 0 else 0
+        return population
 
     def make_pairs(individuals, shuffle=False):
         if shuffle is True:
@@ -84,3 +70,23 @@ class EvolutionaryBenchmark:
         first_half = individuals[:cutoff]
         second_half = individuals[cutoff:]
         return zip(first_half, second_half)
+
+# def crossover(mating_pool):
+#     ''' Implements two types of code recombination. Twice, parents are
+#     selected from the mating pool and combine their genes '''
+#     offspring = []
+#
+#     # Keep the top half from the mother and the bottom half from the father
+#     for mother, father in make_pairs(mating_pool):
+#         assert mother.shape[0] % 2 == 0
+#         cutoff = mother.shape[0] // 2
+#         child = np.vstack(mother[:cutoff,:], father[cutoff:,:])
+#         offspring.append(child)
+#
+#     # Keep the left half from the mother and the right half from the father
+#     for mother, father in make_pairs(mating_pool, shuffle=True):
+#         assert mother.shape[1] % 2 == 0
+#         cutoff = mother.shape[1] // 2
+#         child = np.hstack(mother[:, :cutoff], father[:, cutoff:])
+#         offspring.append(child)
+#     return offspring
