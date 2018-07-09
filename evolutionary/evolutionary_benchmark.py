@@ -1,3 +1,4 @@
+from game.wrappers.game_container import GameContainer
 import numpy as np
 import random
 
@@ -17,26 +18,28 @@ class EvolutionaryBenchmark:
         for _ in range(self.population_size):
             self.population.append(np.random.randint(2, size=GRID_DIMS))
 
-    def do_n_cycles(self, n):
+    def do_n_cycles(self, n, num_steps):
+        ''' Runs n Games of Life (num_steps in each), and performs evolution
+        between each of them '''
         # Initialize if it hasn't been done already
         if self.population is None:
             self.random_initialization()
         # Perform one cycle of the Game of life and evolve
         for i in range(n):
-            self.do_one_cycle()
+            self.do_one_cycle(num_steps)
             self.assess_fitness()
             next_generation = self.select()
             ## skipping crossover for now ##
             self.population = self.mutate(next_generation)
 
-    def do_one_cycle(self):
-        ''' Performs one cycle of the Game of Life'''
+    def do_one_cycle(self, num_steps):
+        ''' Creates a Game of Life and performs num_steps '''
         games = []
 
-        for pair in make_pairs(self.population):
+        for pair in self.make_pairs(self.population):
             game = GameContainer(BOARD_DIMS[0], BOARD_DIMS[1])
-            # TODO: load players to the game
-            # TODO: play the game
+            game.add_players(pair[0], pair[1])
+            game.launch(num_steps)
 
     def assess_fitness(self):
         # TODO
@@ -63,7 +66,7 @@ class EvolutionaryBenchmark:
                     cell[...] = 1 if cell == 0 else 0
         return population
 
-    def make_pairs(individuals, shuffle=False):
+    def make_pairs(self, individuals, shuffle=False):
         if shuffle is True:
             random.shuffle(individuals)
         cutoff = len(individuals) // 2
