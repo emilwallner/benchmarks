@@ -1,3 +1,5 @@
+import os, sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), '../..')))
 from game.GOLAI.arena import Arena
 from benchmarks.lib.turn_program_into_file import turn_program_into_file
 import numpy as np
@@ -6,8 +8,7 @@ from numba import jit
 # from numba import jitclass
 import numba
 import argparse
-import os
-import datetime
+import datetime, time
 
 BOARD_DIMS = (512, 512)
 GRID_DIMS = (64,64)
@@ -48,7 +49,8 @@ class EvolutionaryBenchmark:
             if num_steps == -1:
                 num_steps = min(int(10 + 1.0001 ** i), 1000)
             # Perform one cycle of the Game of life and score it
-            print("Cycle {}".format(i))
+            print("Cycle {}".format(i), end=' ')
+            start_time = time.time()
             self.do_one_cycle(num_steps)
             self.assess_fitness()
             # Each 'save' number of cycles, save the fittest program
@@ -56,11 +58,10 @@ class EvolutionaryBenchmark:
                 self.save_fittest(i, num_steps)
             selection = self.select()
             fittest, score = self.get_fittest()
-            print(self.fitness)
-            print(score)
             next_generation = [fittest] + [self.population[idx] for idx in selection]
             ## skipping crossover for now ##
             self.population = self.mutate(next_generation)
+            print("time: {}".format(time.time() - start_time))
     
     @jit(cache=True)
     def do_one_cycle(self, num_steps=1000):
